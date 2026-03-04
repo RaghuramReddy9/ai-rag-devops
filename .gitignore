@@ -1,6 +1,43 @@
-﻿.env
+﻿# Environment & Secrets
+.env
+
+# Python
 __pycache__/
-.chroma/
-chroma_db/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
 .venv/
+venv/
+env/
+
+# uv
+.uv/
+uv.lock
+
+# Vector Store
+chroma_db/
+.chroma/
+
+# Jupyter
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Data (raw docs can be large — don't commit them)
+data/raw/
