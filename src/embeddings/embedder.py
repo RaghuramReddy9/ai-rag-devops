@@ -1,12 +1,12 @@
 import os
 from typing import List
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_core.documents import Document
 
-load_dotenv()
+load_dotenv(find_dotenv())
 
 
 def get_embeddings():
