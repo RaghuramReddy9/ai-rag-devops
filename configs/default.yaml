@@ -1,0 +1,14 @@
+paths:
+  raw_data_dir: data/raw
+  persist_dir: chroma_db
+  prompt_config: configs/prompts.yaml
+
+chunking:
+  chunk_size: 600
+  chunk_overlap: 100
+
+retrieval:
+  top_k: 3
+
+models:
+  llm_model: llama-3.3-70b-versatile
