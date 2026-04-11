@@ -2,8 +2,7 @@ import os
 from pathlib import Path
 from typing import List
 
-from langchain_community.document_loaders import PyPDFLoader, UnstructuredMarkdownLoader
-from langchain_community.document_loaders import WebBaseLoader
+from langchain_community.document_loaders import PyPDFLoader, UnstructuredMarkdownLoader, WebBaseLoader
 from langchain_core.documents import Document
 
 from dotenv import load_dotenv
