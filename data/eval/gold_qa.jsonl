@@ -1,14 +1,5 @@
-{"question_id": "lc_001",
- "question": "What is LangChain?",
- "reference_answer": "LangChain is a framework for building agents and LLM-powered applications.",
- "expected_sources": ["data/raw/langchain_readme.md"],
- "expected_chunk_ids": [0]
-}
-
+{"question_id": "lc_001", "question": "What is LangChain?", "reference_answer": "LangChain is a framework for building agents and LLM-powered applications.", "expected_sources": ["data/raw/langchain_readme.md"], "expected_chunk_ids": [0]}
 {"question_id": "lc_002", "question": "Why would developers use LangChain?", "reference_answer": "LangChain helps developers build LLM applications using a standard interface for models, embeddings, and vector stores.", "expected_sources": ["data/raw/langchain_readme.md"], "expected_chunk_ids": [2]}
-
 {"question_id": "lc_003", "question": "What are some use cases of LangChain?", "reference_answer": "LangChain can be used for real-time data augmentation and connecting LLMs to external and internal data sources.", "expected_sources": ["data/raw/langchain_readme.md"], "expected_chunk_ids": [2]}
-
 {"question_id": "lc_004", "question": "What advantages does LangChain provide for development?", "reference_answer": "LangChain provides modular architecture, model interoperability, and rapid prototyping capabilities.", "expected_sources": ["data/raw/langchain_readme.md"], "expected_chunk_ids": [3, 5]}
-
 {"question_id": "lc_005", "question": "What is LangSmith used for?", "reference_answer": "LangSmith is used for evaluation, debugging, observability, and improving LLM applications.", "expected_sources": ["data/raw/langchain_readme.md"], "expected_chunk_ids": [7]}
