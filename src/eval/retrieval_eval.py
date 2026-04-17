@@ -1,6 +1,6 @@
+import argparse
 import json
 from pathlib import Path
-import sys
 
 from src.common.config import load_config
 
@@ -58,9 +58,20 @@ def reciprocal_rank(expected_chunk_ids: list[int], retrieved_chunk_ids: list[int
     return 0.0
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Evaluate retrieval outputs.")
+    parser.add_argument(
+        "--config",
+        default="configs/dense.yaml",
+        help="Path to the experiment config file.",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
     """Evaluate retrieval performance using config-driven inputs and outputs."""
-    config_path = sys.argv[1] if len(sys.argv) > 1 else "configs/dense.yaml"
+    args = parse_args()
+    config_path = args.config
     config = load_config(config_path)
 
     gold_dataset_path = config["paths"]["gold_dataset_path"]

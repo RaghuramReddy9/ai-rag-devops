@@ -1,3 +1,4 @@
+import argparse
 from pathlib import Path
 
 from src.common.config import load_config
@@ -7,8 +8,19 @@ from src.pipeline import build_index
 from src.retrieval.vector_retriever import DenseRetriever
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run dense retrieval predictions.")
+    parser.add_argument(
+        "--config",
+        default="configs/dense.yaml",
+        help="Path to the experiment config file.",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
-    config_path = "configs/dense.yaml"
+    args = parse_args()
+    config_path = args.config
     config = load_config(config_path)
     raw_data_dir = config["paths"]["raw_data_dir"]
     persist_dir = config["paths"]["persist_dir"]
