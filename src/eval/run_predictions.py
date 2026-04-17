@@ -1,12 +1,30 @@
+from pathlib import Path
+
 from src.common.config import load_config
+from src.embeddings.embedder import vectorstore_has_documents
 from src.eval.prediction_runner import run_predictions_with_retriever
+from src.pipeline import build_index
 from src.retrieval.vector_retriever import DenseRetriever
 
 
 def main() -> None:
     config_path = "configs/dense.yaml"
     config = load_config(config_path)
+    raw_data_dir = config["paths"]["raw_data_dir"]
     persist_dir = config["paths"]["persist_dir"]
+    chunks_output = config["paths"]["chunks_output"]
+    chunk_size = config["chunking"]["chunk_size"]
+    chunk_overlap = config["chunking"]["chunk_overlap"]
+
+    if not Path(persist_dir).exists() or not vectorstore_has_documents(persist_dir):
+        build_index(
+            raw_data_path=raw_data_dir,
+            persist_dir=persist_dir,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            chunks_output_path=chunks_output,
+        )
+
     retriever = DenseRetriever(persist_dir=persist_dir)
     run_predictions_with_retriever(
         retriever=retriever,

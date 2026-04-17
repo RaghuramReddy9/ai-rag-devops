@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Any
 
 from src.common.config import load_config
-from src.embeddings.embedder import build_vectorstore
+from src.embeddings.embedder import build_vectorstore, vectorstore_has_documents
 from src.generation.generator import generate_answer, get_llm, load_prompt
 from src.ingestion.chunker import chunk_documents, save_chunks_jsonl
 from src.ingestion.loader import load_directory
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     llm = get_llm(model_name=llm_model)
     prompt = load_prompt(config_path=prompt_config_path)
 
-    if not Path(persist_dir).exists():
+    if not Path(persist_dir).exists() or not vectorstore_has_documents(persist_dir):
         build_index(
             raw_data_path=raw_data_dir,
             persist_dir=persist_dir,

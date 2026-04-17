@@ -1,6 +1,6 @@
 paths:
   raw_data_dir: data/raw
-  persist_dir: chroma_db
+  persist_dir: chroma_db_local
   chunks_output: data/processed/chunks.jsonl
   prompt_config: configs/prompts.yaml
   gold_dataset_path: data/eval/gold_qa.jsonl
@@ -13,6 +13,7 @@ retrieval:
   top_k: 3
 
 models:
+  embedding_model: sentence-transformers/all-MiniLM-L6-v2
   llm_model: llama-3.3-70b-versatile
 
 evaluation:
