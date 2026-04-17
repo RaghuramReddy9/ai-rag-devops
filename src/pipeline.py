@@ -4,7 +4,7 @@ from typing import Any
 from src.common.config import load_config
 from src.embeddings.embedder import build_vectorstore
 from src.generation.generator import generate_answer, get_llm, load_prompt
-from src.ingestion.chunker import chunk_documents
+from src.ingestion.chunker import chunk_documents, save_chunks_jsonl
 from src.ingestion.loader import load_directory
 from src.retrieval.vector_retriever import DenseRetriever
 
@@ -14,6 +14,7 @@ def build_index(
     persist_dir: str,
     chunk_size: int,
     chunk_overlap: int,
+    chunks_output_path: str = "data/processed/chunks.jsonl",
 ) -> None:
     documents = load_directory(raw_data_path)
     chunks = chunk_documents(
@@ -21,8 +22,9 @@ def build_index(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
     )
+    save_chunks_jsonl(chunks, chunks_output_path)
     build_vectorstore(
-        documents=chunks,
+        chunks=chunks,
         persist_dir=persist_dir,
     )
 

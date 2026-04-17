@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 from typing import List
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -37,3 +39,22 @@ def chunk_documents(
     print(f"Average chunk size: {sum(len(c.page_content) for c in chunks) // len(chunks)} characters")
 
     return chunks
+
+
+def save_chunks_jsonl(chunks: List[Document], output_path: str) -> None:
+    """Persist chunk metadata and text as JSONL."""
+    path = Path(output_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    with path.open("w", encoding="utf-8") as f:
+        for chunk in chunks:
+            metadata = chunk.metadata or {}
+            row = {
+                "chunk_id": metadata.get("chunk_id", "unknown"),
+                "source": metadata.get("source", "unknown"),
+                "chunk_text": chunk.page_content,
+                "chunk_size": metadata.get("chunk_size", len(chunk.page_content)),
+            }
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+
+    print(f"Saved {len(chunks)} chunks to {output_path}")
