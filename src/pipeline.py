@@ -63,6 +63,7 @@ if __name__ == "__main__":
 
     raw_data_dir = config["paths"]["raw_data_dir"]
     persist_dir = config["paths"]["persist_dir"]
+    chunks_output_path = config["paths"]["chunks_output"]
     prompt_config_path = config["paths"]["prompt_config"]
 
     chunk_size = config["chunking"]["chunk_size"]
@@ -81,6 +82,7 @@ if __name__ == "__main__":
             persist_dir=persist_dir,
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
+            chunks_output_path=chunks_output_path,
         )
 
     sample_question = "What is this dataset about?"

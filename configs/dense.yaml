@@ -1,0 +1,10 @@
+experiment:
+  name: dense_baseline_v1
+
+retrieval:
+  type: dense
+
+paths:
+  predictions_output: experiments/results/dense_predictions.jsonl
+  retrieval_eval_output: experiments/results/dense_retrieval_eval.jsonl
+  retrieval_summary_output: experiments/results/dense_retrieval_summary.json

@@ -49,9 +49,10 @@ def save_chunks_jsonl(chunks: List[Document], output_path: str) -> None:
     with path.open("w", encoding="utf-8") as f:
         for chunk in chunks:
             metadata = chunk.metadata or {}
+            source = str(metadata.get("source", "unknown")).replace("\\", "/")
             row = {
                 "chunk_id": metadata.get("chunk_id", "unknown"),
-                "source": metadata.get("source", "unknown"),
+                "source": source,
                 "chunk_text": chunk.page_content,
                 "chunk_size": metadata.get("chunk_size", len(chunk.page_content)),
             }

@@ -1,0 +1,10 @@
+experiment:
+  name: bm25_baseline_v1
+
+retrieval:
+  type: bm25
+
+paths:
+  predictions_output: experiments/results/bm25_predictions.jsonl
+  retrieval_eval_output: experiments/results/bm25_retrieval_eval.jsonl
+  retrieval_summary_output: experiments/results/bm25_retrieval_summary.json
