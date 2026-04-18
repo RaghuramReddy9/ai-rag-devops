@@ -2,7 +2,7 @@ import argparse
 
 from src.common.config import load_config
 from src.eval.prediction_runner import run_predictions_with_retriever
-from src.retrieval.bm25_retriever import BM25Retriever
+from src.retrieval.factory import build_retriever
 
 
 def parse_args() -> argparse.Namespace:
@@ -18,11 +18,13 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     config_path = args.config
-    retriever = BM25Retriever()
+    config = load_config(config_path)
+    retriever = build_retriever(config)
     run_predictions_with_retriever(
         retriever=retriever,
-        output_path=load_config(config_path)["paths"]["predictions_output"],
+        output_path=config["paths"]["predictions_output"],
         config_path=config_path,
+        generate_answers=False,
     )
 
 

@@ -14,7 +14,7 @@ retrieval:
 
 models:
   embedding_model: sentence-transformers/all-MiniLM-L6-v2
-  llm_model: llama-3.3-70b-versatile
+  llm_model: openrouter/free
 
 evaluation:
   retrieval_k_values: [1, 3, 5]

@@ -3,7 +3,6 @@ from datetime import datetime
 from pathlib import Path
 
 from src.common.config import load_config
-from src.generation.generator import generate_answer, get_llm, load_prompt
 
 
 def load_gold_questions(path: str | Path) -> list[dict]:
@@ -25,23 +24,35 @@ def save_predictions(predictions: list[dict], output_path: str) -> None:
             f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
-def run_predictions_with_retriever(retriever, output_path: str, config_path: str) -> None:
+def run_predictions_with_retriever(
+    retriever,
+    output_path: str,
+    config_path: str,
+    generate_answers: bool = False,
+) -> None:
     config = load_config(config_path)
 
-    prompt_config_path = config["paths"]["prompt_config"]
     top_k = config["retrieval"]["top_k"]
-    llm_model = config["models"]["llm_model"]
-
-    llm = get_llm(model_name=llm_model)
-    prompt = load_prompt(config_path=prompt_config_path)
     gold_rows = load_gold_questions(config["paths"]["gold_dataset_path"])
+
+    llm = None
+    prompt = None
+    if generate_answers:
+        from src.generation.generator import generate_answer, get_llm, load_prompt
+
+        prompt_config_path = config["paths"]["prompt_config"]
+        llm_model = config["models"]["llm_model"]
+        llm = get_llm(model_name=llm_model)
+        prompt = load_prompt(config_path=prompt_config_path)
 
     predictions = []
 
     for row in gold_rows:
         question = row["question"]
         retrieved_docs = retriever.retrieve(question, k=top_k)
-        answer = generate_answer(question, retrieved_docs, llm=llm, prompt=prompt)
+        answer = ""
+        if generate_answers:
+            answer = generate_answer(question, retrieved_docs, llm=llm, prompt=prompt)
 
         citations = []
         retrieved_context = []

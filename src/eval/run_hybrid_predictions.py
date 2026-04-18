@@ -9,10 +9,10 @@ from src.retrieval.factory import build_retriever
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run dense retrieval predictions.")
+    parser = argparse.ArgumentParser(description="Run hybrid retrieval predictions.")
     parser.add_argument(
         "--config",
-        default="configs/dense.yaml",
+        default="configs/hybrid.yaml",
         help="Path to the experiment config file.",
     )
     return parser.parse_args()

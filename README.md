@@ -161,8 +161,8 @@ Install dependencies and provide the required environment variables for the embe
 
 Expected environment variables:
 
-- `GOOGLE_API_KEY`
-- `GROQ_API_KEY`
+- `OPENROUTER_API_KEY`
+- `OPENROUTER_MODEL` (optional override for the configured model id)
 
 Typical flow:
 

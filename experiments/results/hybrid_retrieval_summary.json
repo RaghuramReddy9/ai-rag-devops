@@ -1,0 +1,16 @@
+{
+  "experiment_name": "hybrid_baseline_v1",
+  "retriever_type": "hybrid",
+  "gold_dataset_path": "data/eval/gold_qa.jsonl",
+  "predictions_path": "experiments/results/hybrid_predictions.jsonl",
+  "num_questions": 48,
+  "k_values": [
+    1,
+    3,
+    5
+  ],
+  "mrr": 0.705,
+  "avg_recall_at_1": 0.59,
+  "avg_recall_at_3": 0.753,
+  "avg_recall_at_5": 0.753
+}
