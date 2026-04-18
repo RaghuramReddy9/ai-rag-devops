@@ -2,13 +2,26 @@
 
 ## Purpose
 
-This project is structured as a research baseline for retrieval comparison in RAG systems.
+This repository has two layers:
 
-The architecture is designed so that ingestion, chunking, corpus export, prompting, and generation can remain mostly stable while retrieval strategies are swapped and evaluated. That gives you a cleaner way to study the effect of retrieval on final performance.
+- main application pipeline
+- retrieval research bench
 
-## Current System
+Those two layers should not be confused.
 
-The currently implemented system is a dense-retrieval RAG pipeline.
+Main application pipeline:
+- dense retrieval over Chroma
+
+Research bench:
+- dense
+- BM25
+- hybrid
+
+That split is intentional and reflects the current benchmark results.
+
+## Main Serving Path
+
+The serving path is dense-first.
 
 ```text
 Raw documents
@@ -19,7 +32,7 @@ Chunking + metadata
     ->
 chunks.jsonl export
     ->
-Dense embeddings
+MiniLM embeddings
     ->
 Chroma vector index
     ->
@@ -28,226 +41,193 @@ Dense retrieval
 Prompt assembly
     ->
 LLM answer generation
+    ->
+Citations
 ```
+
+Why dense is the serving path:
+- best retrieval coverage on the current benchmark
+- BM25 contributes little useful additional relevance
+- hybrid helps rank-first results but does not beat dense coverage at `@3` and `@5`
 
 ## Components
 
-### 1. Ingestion
+### Ingestion
 
-[loader.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/ingestion/loader.py) loads local documents into LangChain `Document` objects.
+[loader.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/ingestion/loader.py)
 
-Supported sources currently include:
+Responsibilities:
+- load raw files from `data/raw`
+- return LangChain `Document` objects
 
-- PDF
-- Markdown
-- Plain text
-- Web pages through a loader function
+### Chunking
 
-For the current repo state, the active corpus is a Markdown file in `data/raw`.
+[chunker.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/ingestion/chunker.py)
 
-### 2. Chunking
+Responsibilities:
+- split documents into chunks
+- assign `chunk_id`
+- assign `chunk_size`
+- export [chunks.jsonl](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/data/processed/chunks.jsonl)
 
-[chunker.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/ingestion/chunker.py) splits documents using `RecursiveCharacterTextSplitter`.
+Why `chunks.jsonl` still matters:
+- shared artifact for debugging
+- shared artifact for BM25 benchmarking
+- stable view of the corpus for evaluation and inspection
 
-Each chunk is annotated with:
+### Dense Indexing
 
-- `chunk_id`
-- `chunk_size`
-- source metadata inherited from the loader
+[embedder.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/embeddings/embedder.py)
 
-The same module also exports the chunk corpus to `data/processed/chunks.jsonl`, which is an important research artifact because it gives all retrievers the same text units.
+Responsibilities:
+- create local MiniLM embeddings
+- build Chroma
+- reload Chroma for retrieval
 
-### 3. Dense Indexing
-
-[embedder.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/embeddings/embedder.py) creates embeddings with Google Gemini and persists them in Chroma.
-
-This layer is responsible for:
-
-- Embedding chunk text
-- Building the vector store
-- Reloading a persisted vector store for future runs
-
-### 4. Retrieval
-
-[vector_retriever.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/retrieval/vector_retriever.py) is the current retriever implementation.
-
-It performs:
-
-- Dense similarity search
-- Top-k chunk retrieval
-
-This is the main baseline that future retrieval variants should be compared against.
-
-### 5. Prompting and Generation
-
-[generator.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/generation/generator.py) handles:
-
-- LLM client setup
-- Prompt loading from YAML
-- Retrieved-context formatting
-- Final answer generation
-
-The prompt is intentionally strict about using only retrieved context and including source citations.
-
-### 6. Pipeline Orchestration
-
-[pipeline.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/pipeline.py) ties the pieces together.
-
-It currently supports:
-
-- Building the dense index
-- Saving the chunk corpus
-- Running retrieval and generation for a question
-
-## Research Architecture Direction
-
-The next step is to evolve the architecture from a single dense retriever into a retrieval comparison framework.
-
-Target direction:
-
-```text
-Shared raw documents
-    ->
-Shared chunking pipeline
-    ->
-Shared chunks.jsonl corpus
-    ->
-Multiple retrievers
-    |-> Dense
-    |-> BM25
-    |-> Hybrid
-    ->
-Common retrieval interface
-    ->
-Common evaluation harness
-    ->
-Experiment outputs and comparison summaries
-```
-
-## Recommended Retrieval Abstraction
-
-To support comparison cleanly, retrieval should move toward a common interface such as:
-
-```python
-class BaseRetriever:
-    def retrieve(self, query: str, k: int = 3) -> list[Document]:
-        ...
-```
-
-Then each retriever can implement the same contract:
-
-- `DenseRetriever`
-- `BM25Retriever`
-- `HybridRetriever`
-
-That keeps the rest of the system unchanged and makes experiments easier to compare.
-
-## Planned Retrieval Modes
+Important rule:
+- one vector store must use one embedding model consistently
 
 ### Dense Retrieval
 
-Best for:
+[vector_retriever.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/retrieval/vector_retriever.py)
 
-- Semantic matching
-- Paraphrased questions
-- Queries where lexical overlap is weak
+Responsibilities:
+- query Chroma
+- return top-k dense results
 
-Tradeoff:
+This is the primary retriever used by [pipeline.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/pipeline.py).
 
-- Can miss exact-keyword matches or domain-specific terms
+### Generation
 
-### BM25 Retrieval
+[generator.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/generation/generator.py)
 
-Best for:
+Responsibilities:
+- initialize the LLM client
+- load the prompt
+- format retrieved context
+- generate the final answer
 
-- Exact phrase or keyword matching
-- Sparse, term-heavy queries
-- Situations where important words must be matched directly
+### Pipeline Orchestration
 
-Tradeoff:
+[pipeline.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/pipeline.py)
 
-- Can miss semantically similar but lexically different passages
+Responsibilities:
+- build the dense index if needed
+- save chunks
+- run dense retrieval
+- call generation
+- attach citations
 
-### Hybrid Retrieval
+This file is the main application path and should stay dense-only unless benchmark evidence clearly changes.
 
-Best for:
+## Research Bench
 
-- Balancing semantic recall and keyword precision
-- Reducing failure modes of either retrieval strategy alone
-
-Possible fusion strategies:
-
-- Weighted score fusion
-- Reciprocal rank fusion
-- Two-stage retrieval and reranking
-
-## Evaluation View
-
-The architecture should support at least two levels of evaluation.
-
-### Retrieval Evaluation
-
-Goal:
-
-- Measure whether the retriever finds the correct chunks
-
-Useful metrics:
-
-- Recall@K
-- MRR
-- Hit rate
-- Rank of first relevant chunk
+The repo still keeps BM25 and hybrid, but as experiment artifacts rather than serving defaults.
 
 Artifacts:
+- [bm25_retriever.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/retrieval/bm25_retriever.py)
+- [hybrid_retriever.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/retrieval/hybrid_retriever.py)
+- [factory.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/retrieval/factory.py)
 
-- Question-level retrieval outputs
-- Aggregate summary JSON
+Experiment runners:
+- [run_predictions.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/eval/run_predictions.py)
+- [run_bm25_predictions.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/eval/run_bm25_predictions.py)
+- [run_hybrid_predictions.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/eval/run_hybrid_predictions.py)
 
-### End-to-End RAG Evaluation
+Experiment evaluators:
+- [retrieval_eval.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/eval/retrieval_eval.py)
+- [analyze_retrieval_overlap.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/eval/analyze_retrieval_overlap.py)
+
+### Why BM25 Is Not in the Main Path
+
+Overlap analysis currently shows:
+- `avg_overlap@5 = 2.104`
+- BM25 adds a new relevant chunk on `6.2%` of queries
+- BM25 is useless on `93.8%` of queries
+
+That means BM25 remains useful as:
+- a baseline
+- a diagnostic tool
+- a future routing signal
+
+But not as:
+- the main retriever for the serving path
+
+### Why Hybrid Is Still Kept
+
+Hybrid is still useful because:
+- it improved `MRR`
+- it improved `Recall@1`
+- it is a valid experiment artifact for ranking analysis
+
+But hybrid is not the main serving path because:
+- dense still has stronger retrieval coverage at `Recall@3` and `Recall@5`
+- deeper branch fetch did not improve the hybrid summary on the current benchmark
+
+## Evaluation Layers
+
+The architecture now assumes evaluation should happen in stages.
+
+### 1. Retrieval-Only Evaluation
 
 Goal:
+- measure whether the retriever finds the right chunks
 
-- Measure whether better retrieval leads to better answers
+Metrics:
+- `Recall@1`
+- `Recall@3`
+- `Recall@5`
+- `MRR`
+- overlap and diversity diagnostics
 
-Useful checks:
+This stage should run without the LLM in the loop.
 
-- Citation correctness
-- Groundedness to retrieved context
-- Coverage of the expected answer
-- Comparison across retriever types using the same prompt and model
+### 2. Reranking
 
-## Why `chunks.jsonl` Matters
+Goal:
+- improve ordering after dense retrieval
 
-The chunk export is important architecturally, not just operationally.
+Recommended next layer:
+- cross-encoder reranking on the dense candidate set
 
-It gives the system:
+This is the next quality layer to add.
 
-- A stable shared corpus representation
-- Easier debugging of chunk boundaries
-- A common input for BM25 indexing
-- Better reproducibility across experiments
-- A simpler way to inspect retrieval failures without reopening source documents every time
+### 3. Grounding and Citation Enforcement
 
-## Suggested Next Refactor
+Goal:
+- make sure generated answers stay attached to retrieved evidence
 
-If you continue in the research direction, the cleanest next architecture update would be:
+This stage should check:
+- citation presence
+- citation correctness
+- answer grounding to retrieved chunks
 
-1. Add a `BM25Retriever` built from `data/processed/chunks.jsonl`
-2. Add a `HybridRetriever` using a simple fusion strategy
-3. Add a retriever selector in config
-4. Add a retrieval evaluation script that saves per-retriever outputs in separate experiment folders
-5. Keep the same chunking and prompting path so comparisons stay fair
+### 4. End-to-End Answer Evaluation
+
+Goal:
+- judge final answer usefulness only after retrieval and grounding are stable
+
+## Recommended Next Direction
+
+The next architecture change should be:
+
+1. dense retrieval
+2. cross-encoder reranking
+3. grounding and citation enforcement
+4. end-to-end answer evaluation
+
+Not the other way around.
 
 ## Practical Summary
 
-Right now the repo is a dense baseline with research scaffolding already visible.
+This repo is no longer best described as “dense vs BM25 vs hybrid as equal pipeline options.”
 
-The architecture is in a good place to become a retrieval comparison framework because:
+It is better described as:
 
-- chunking is already separated
-- chunk metadata is preserved
-- chunk corpus export now exists
-- retrieval is isolated behind a small wrapper
-- generation is independent from retrieval implementation details
+- dense is the primary application retriever
+- BM25 and hybrid are controlled research artifacts
+- reranking is the next system improvement
+- grounding is the next answer-safety improvement
 
-That means the project can grow from "a working dense RAG prototype" into "a repeatable research repo for dense vs BM25 vs hybrid retrieval experiments" without needing a full redesign.
+See also:
+- [findings.md](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/docs/findings.md)

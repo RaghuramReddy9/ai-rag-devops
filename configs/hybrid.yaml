@@ -4,6 +4,8 @@ experiment:
 retrieval:
   type: hybrid
   rrf_k: 60
+  dense_fetch_k: 10
+  bm25_fetch_k: 10
 
 paths:
   predictions_output: experiments/results/hybrid_predictions.jsonl

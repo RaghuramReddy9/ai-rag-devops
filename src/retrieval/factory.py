@@ -19,6 +19,8 @@ def build_retriever(config: dict):
             dense_retriever=dense_retriever,
             bm25_retriever=bm25_retriever,
             rrf_k=config["retrieval"].get("rrf_k", 60),
+            dense_fetch_k=config["retrieval"].get("dense_fetch_k"),
+            bm25_fetch_k=config["retrieval"].get("bm25_fetch_k"),
         )
 
     raise ValueError(f"Unsupported retrieval type: {retrieval_type}")

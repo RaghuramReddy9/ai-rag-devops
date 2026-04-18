@@ -1,0 +1,52 @@
+{
+  "num_questions": 48,
+  "k": 5,
+  "avg_overlap_at_k": 2.104,
+  "pct_queries_where_bm25_adds_new_relevant_chunk": 6.2,
+  "pct_queries_where_bm25_is_useless": 93.8,
+  "avg_dense_unique_at_k": 2.896,
+  "avg_bm25_unique_at_k": 2.896,
+  "category_summary": {
+    "direct": {
+      "num_questions": 10,
+      "avg_overlap_at_k": 1,
+      "pct_queries_where_bm25_adds_new_relevant_chunk": 10.0,
+      "pct_queries_where_bm25_is_useless": 90.0,
+      "bm25_helpful_question_ids": [
+        "gold_002"
+      ]
+    },
+    "distractor": {
+      "num_questions": 8,
+      "avg_overlap_at_k": 2.75,
+      "pct_queries_where_bm25_adds_new_relevant_chunk": 0.0,
+      "pct_queries_where_bm25_is_useless": 100.0,
+      "bm25_helpful_question_ids": []
+    },
+    "keyword_heavy": {
+      "num_questions": 10,
+      "avg_overlap_at_k": 2.1,
+      "pct_queries_where_bm25_adds_new_relevant_chunk": 0.0,
+      "pct_queries_where_bm25_is_useless": 100.0,
+      "bm25_helpful_question_ids": []
+    },
+    "multi_evidence": {
+      "num_questions": 8,
+      "avg_overlap_at_k": 2.25,
+      "pct_queries_where_bm25_adds_new_relevant_chunk": 12.5,
+      "pct_queries_where_bm25_is_useless": 87.5,
+      "bm25_helpful_question_ids": [
+        "gold_040"
+      ]
+    },
+    "paraphrased_semantic": {
+      "num_questions": 12,
+      "avg_overlap_at_k": 2.5,
+      "pct_queries_where_bm25_adds_new_relevant_chunk": 8.3,
+      "pct_queries_where_bm25_is_useless": 91.7,
+      "bm25_helpful_question_ids": [
+        "gold_030"
+      ]
+    }
+  }
+}

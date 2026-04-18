@@ -25,10 +25,14 @@ class HybridRetriever:
         dense_retriever: DenseRetriever,
         bm25_retriever: BM25Retriever,
         rrf_k: int = 60,
+        dense_fetch_k: int | None = None,
+        bm25_fetch_k: int | None = None,
     ) -> None:
         self.dense_retriever = dense_retriever
         self.bm25_retriever = bm25_retriever
         self.rrf_k = rrf_k
+        self.dense_fetch_k = dense_fetch_k
+        self.bm25_fetch_k = bm25_fetch_k
 
     def _make_fusion_key(self, document: Document) -> FusionKey:
         metadata = document.metadata or {}
@@ -62,8 +66,11 @@ class HybridRetriever:
             fused_documents[key] = document
 
     def retrieve(self, query: str, k: int = 3) -> List[Document]:
-        dense_docs = self.dense_retriever.retrieve(query=query, k=k)
-        bm25_docs = self.bm25_retriever.retrieve(query=query, k=k)
+        dense_k = self.dense_fetch_k if self.dense_fetch_k is not None else k
+        bm25_k = self.bm25_fetch_k if self.bm25_fetch_k is not None else k
+
+        dense_docs = self.dense_retriever.retrieve(query=query, k=dense_k)
+        bm25_docs = self.bm25_retriever.retrieve(query=query, k=bm25_k)
 
         fused_scores: Dict[FusionKey, float] = {}
         fused_documents: Dict[FusionKey, Document] = {}
