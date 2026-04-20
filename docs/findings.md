@@ -165,13 +165,6 @@ Current default recommendation:
   - `bm25`
   - `hybrid`
 
-## What I Would Improve Next
-
-1. stronger grounding and citation enforcement
-2. more robust provider retry and resume behavior for long answer runs
-3. richer answer evaluation than the current lightweight scorecard
-4. larger and more diverse datasets
-
 ## Portfolio Value
 
 This project is worth showing because it demonstrates:

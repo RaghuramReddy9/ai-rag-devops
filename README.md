@@ -31,6 +31,7 @@ BM25 and hybrid were evaluated and kept in the repo as research artifacts, not a
 | Stack | MRR | Recall@1 | Recall@3 | Recall@5 |
 |---|---:|---:|---:|---:|
 | Dense | 0.674 | 0.486 | 0.847 | 0.847 |
+| BM25 | 0.496 | 0.392 | 0.576 | 0.576 |
 | Hybrid | 0.705 | 0.590 | 0.753 | 0.753 |
 | Dense + Rerank | 0.817 | 0.694 | 0.809 | 0.917 |
 
@@ -52,7 +53,7 @@ Interpretation:
 - Dense retrieval is the strongest base retriever in this corpus
 - BM25 adds little useful diversity here and does not justify being part of the serving path
 - Hybrid improves early ranking but not enough overall coverage to beat the dense+rerank stack
-- Cross-encoder reranking is the highest-value next layer after dense retrieval
+- Cross-encoder reranking is now part of the preferred serving stack
 
 ## Repository Layout
 
@@ -201,11 +202,12 @@ Expected environment variables:
 
 Dense embeddings are local and do not require a hosted embedding API.
 
-## Next Improvements
+## Final Project Position
 
-The best next improvements are:
+This project closes with a clear result:
 
-1. stronger grounding and citation enforcement
-2. more robust provider retry/resume for long answer runs
-3. more careful answer evaluation than the current lightweight scorecard
-4. broader datasets beyond the current 4-document benchmark
+- `dense_rerank` is the preferred serving stack for this corpus
+- `bm25` and `hybrid` remain in the repo as benchmark artifacts
+- retrieval-only and answer-generation benchmarking are both implemented and completed
+
+The value of the project is not just that it built a RAG pipeline. It showed, with controlled experiments, which retrieval design held up best once answer quality and latency were measured together.

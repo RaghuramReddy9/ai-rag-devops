@@ -7,7 +7,7 @@ This repository has two stable layers:
 - serving-oriented retrieval and answer generation
 - research-oriented benchmarking and diagnostics
 
-The current serving stack is:
+The current preferred serving stack is:
 
 ```text
 Dense retrieval
@@ -209,7 +209,7 @@ Current lightweight scorecard:
 
 ## Why Dense + Rerank Won
 
-The current architecture settles on dense+rereank because:
+The current architecture settles on dense+rerank because:
 
 - dense provides strong candidate recall
 - the cross-encoder improves ranking inside that candidate pool
