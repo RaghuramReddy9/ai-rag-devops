@@ -1,0 +1,21 @@
+{
+  "experiments": [
+    {
+      "input_path": "experiments/results/dense_rerank_answers.jsonl",
+      "num_records": 48,
+      "answer_populated_count": 48,
+      "citations_populated_count": 48,
+      "latency_ms": {
+        "retrieval_avg": 458.31,
+        "retrieval_median": 418.39,
+        "retrieval_p95": 587.06,
+        "generation_avg": 17462.25,
+        "generation_median": 4918.85,
+        "generation_p95": 42850.27,
+        "total_avg": 17920.62,
+        "total_median": 5315.92,
+        "total_p95": 43214.21
+      }
+    }
+  ]
+}

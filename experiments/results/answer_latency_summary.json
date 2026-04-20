@@ -1,0 +1,38 @@
+{
+  "experiments": [
+    {
+      "input_path": "experiments/results/dense_answers_sample.jsonl",
+      "num_records": 5,
+      "answer_populated_count": 5,
+      "citations_populated_count": 5,
+      "latency_ms": {
+        "retrieval_avg": 63.58,
+        "retrieval_median": 37.98,
+        "retrieval_p95": 38.74,
+        "generation_avg": 6795.02,
+        "generation_median": 3485.21,
+        "generation_p95": 5823.94,
+        "total_avg": 6858.77,
+        "total_median": 3522.98,
+        "total_p95": 5993.29
+      }
+    },
+    {
+      "input_path": "experiments/results/dense_rerank_answers_sample.jsonl",
+      "num_records": 5,
+      "answer_populated_count": 5,
+      "citations_populated_count": 5,
+      "latency_ms": {
+        "retrieval_avg": 505.93,
+        "retrieval_median": 508.69,
+        "retrieval_p95": 561.68,
+        "generation_avg": 11193.26,
+        "generation_median": 5180.89,
+        "generation_p95": 5461.17,
+        "total_avg": 11699.26,
+        "total_median": 5609.91,
+        "total_p95": 5969.92
+      }
+    }
+  ]
+}

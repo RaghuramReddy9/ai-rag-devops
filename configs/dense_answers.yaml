@@ -1,0 +1,12 @@
+experiment:
+  name: dense_answers_v1
+
+retrieval:
+  type: dense
+  top_k: 5
+
+generation:
+  enabled: true
+
+paths:
+  predictions_output: experiments/results/dense_answers.jsonl

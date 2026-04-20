@@ -1,0 +1,24 @@
+{
+  "experiments": [
+    {
+      "input_path": "experiments/results/dense_rerank_answers.jsonl",
+      "num_records": 48,
+      "avg_correctness_recall": 0.687,
+      "expected_chunk_retrieved_rate": 0.938,
+      "citations_grounded_rate": 1.0,
+      "abstention_rate": 0.104,
+      "unsupported_risk_rate": 0.042,
+      "latency_ms": {
+        "retrieval_avg": 458.31,
+        "retrieval_median": 418.39,
+        "retrieval_p95": 659.8,
+        "generation_avg": 17462.25,
+        "generation_median": 4918.85,
+        "generation_p95": 42892.06,
+        "total_avg": 17920.62,
+        "total_median": 5315.92,
+        "total_p95": 43241.74
+      }
+    }
+  ]
+}

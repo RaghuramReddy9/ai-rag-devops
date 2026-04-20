@@ -1,0 +1,22 @@
+experiment:
+  name: dense_rerank_v1
+
+experiment_name: dense_rerank_v1
+
+retrieval:
+  type: dense_rerank
+  retriever_type: dense_rerank
+  top_k: 5
+  fetch_k: 10
+  reranker_model_name: cross-encoder/ms-marco-MiniLM-L6-v2
+  reranker_max_length: 512
+
+paths:
+  predictions_output: experiments/results/dense_rerank_predictions.jsonl
+  retrieval_eval_output: experiments/results/dense_rerank_retrieval_eval.jsonl
+  retrieval_summary_output: experiments/results/dense_rerank_retrieval_summary.json
+
+output:
+  predictions_path: experiments/results/dense_rerank_predictions.jsonl
+  retrieval_eval_path: experiments/results/dense_rerank_retrieval_eval.jsonl
+  retrieval_summary_path: experiments/results/dense_rerank_retrieval_summary.json

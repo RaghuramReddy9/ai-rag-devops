@@ -1,4 +1,5 @@
 import os
+import time
 from types import SimpleNamespace
 from typing import List
 from dotenv import load_dotenv, find_dotenv
@@ -12,11 +13,20 @@ load_dotenv(find_dotenv())
 
 
 class OpenRouterChatClient:
-    def __init__(self, model: str, api_key: str, temperature: float = 0.0) -> None:
+    def __init__(
+        self,
+        model: str,
+        api_key: str,
+        temperature: float = 0.0,
+        max_retries: int = 3,
+        retry_backoff_seconds: float = 2.0,
+    ) -> None:
         self.model = model
         self.api_key = api_key
         self.temperature = temperature
         self.base_url = "https://openrouter.ai/api/v1/chat/completions"
+        self.max_retries = max_retries
+        self.retry_backoff_seconds = retry_backoff_seconds
 
     def invoke(self, prompt: str):
         headers = {
@@ -43,17 +53,34 @@ class OpenRouterChatClient:
             ],
         }
 
-        response = requests.post(
-            self.base_url,
-            headers=headers,
-            json=payload,
-            timeout=120,
-        )
-        response.raise_for_status()
+        last_error = None
 
-        data = response.json()
-        content = data["choices"][0]["message"]["content"]
-        return SimpleNamespace(content=content)
+        for attempt in range(self.max_retries + 1):
+            try:
+                response = requests.post(
+                    self.base_url,
+                    headers=headers,
+                    json=payload,
+                    timeout=120,
+                )
+                response.raise_for_status()
+                data = response.json()
+                content = data["choices"][0]["message"]["content"]
+                return SimpleNamespace(content=content)
+            except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as exc:
+                last_error = exc
+            except requests.exceptions.HTTPError as exc:
+                status_code = exc.response.status_code if exc.response is not None else None
+                if status_code not in {429, 500, 502, 503, 504}:
+                    raise
+                last_error = exc
+            except requests.exceptions.JSONDecodeError as exc:
+                last_error = exc
+
+            if attempt < self.max_retries:
+                time.sleep(self.retry_backoff_seconds * (attempt + 1))
+
+        raise last_error
 
 
 def get_llm(model_name: str):
