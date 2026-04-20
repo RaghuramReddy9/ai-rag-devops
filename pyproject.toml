@@ -1,9 +1,9 @@
 [project]
 name = "ai-rag-devops"
 version = "0.1.0"
-description = "Add your description here"
+description = "Research-oriented RAG benchmark for dense, hybrid, and dense-rerank retrieval with answer-quality evaluation."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
     "beautifulsoup4>=4.14.3",
     "chromadb>=1.5.2",

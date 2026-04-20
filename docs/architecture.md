@@ -2,232 +2,225 @@
 
 ## Purpose
 
-This repository has two layers:
+This repository has two stable layers:
 
-- main application pipeline
-- retrieval research bench
+- serving-oriented retrieval and answer generation
+- research-oriented benchmarking and diagnostics
 
-Those two layers should not be confused.
+The current serving stack is:
 
-Main application pipeline:
-- dense retrieval over Chroma
+```text
+Dense retrieval
+    ->
+Cross-encoder reranking
+    ->
+Final top-k context
+    ->
+Prompted answer generation
+```
 
-Research bench:
+That is the current architecture, not future work.
+
+## System Modes
+
+### Retrieval-Only Mode
+
+Used for:
 - dense
-- BM25
 - hybrid
+- dense_rerank
+- BM25 diagnostics
 
-That split is intentional and reflects the current benchmark results.
-
-## Main Serving Path
-
-The serving path is dense-first.
+Flow:
 
 ```text
 Raw documents
     ->
-Document loaders
-    ->
 Chunking + metadata
     ->
-chunks.jsonl export
+chunks.jsonl
     ->
-MiniLM embeddings
+Retriever
     ->
-Chroma vector index
+Retrieved documents
     ->
-Dense retrieval
+Evaluation
+```
+
+No LLM call happens in this mode.
+
+This mode exists to answer:
+- does the retriever find the right chunks?
+- does reranking improve ranking quality?
+- does hybrid help enough to justify its complexity?
+
+### Answer-Generation Mode
+
+Used for:
+- dense + LLM
+- dense_rerank + LLM
+
+Flow:
+
+```text
+Retriever
+    ->
+Retrieved documents
     ->
 Prompt assembly
     ->
-LLM answer generation
+LLM
     ->
-Citations
+Answer + citations + latency
 ```
 
-Why dense is the serving path:
-- best retrieval coverage on the current benchmark
-- BM25 contributes little useful additional relevance
-- hybrid helps rank-first results but does not beat dense coverage at `@3` and `@5`
+This mode exists to answer:
+- do retrieval gains improve final answers?
+- are answers grounded in retrieved evidence?
+- is the extra latency worth it?
 
-## Components
+## Current Serving Stack
 
-### Ingestion
+### 1. Ingestion
 
-[loader.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/ingestion/loader.py)
+`src/ingestion/loader.py`
 
 Responsibilities:
-- load raw files from `data/raw`
-- return LangChain `Document` objects
+- load files from `data/raw`
+- produce LangChain `Document` objects
 
-### Chunking
+### 2. Chunking
 
-[chunker.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/ingestion/chunker.py)
+`src/ingestion/chunker.py`
 
 Responsibilities:
 - split documents into chunks
-- assign `chunk_id`
-- assign `chunk_size`
-- export [chunks.jsonl](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/data/processed/chunks.jsonl)
+- attach `chunk_id`
+- attach `chunk_size`
+- export `data/processed/chunks.jsonl`
 
-Why `chunks.jsonl` still matters:
-- shared artifact for debugging
-- shared artifact for BM25 benchmarking
-- stable view of the corpus for evaluation and inspection
+### 3. Dense Indexing
 
-### Dense Indexing
-
-[embedder.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/embeddings/embedder.py)
+`src/embeddings/embedder.py`
 
 Responsibilities:
-- create local MiniLM embeddings
-- build Chroma
-- reload Chroma for retrieval
+- build MiniLM embeddings locally
+- persist Chroma
+- reload the vector store
 
-Important rule:
-- one vector store must use one embedding model consistently
+### 4. Retrieval
 
-### Dense Retrieval
+Base retriever:
+- `src/retrieval/vector_retriever.py`
 
-[vector_retriever.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/retrieval/vector_retriever.py)
+Reranker abstraction:
+- `src/retrieval/reranker.py`
+
+Cross-encoder implementation:
+- `src/retrieval/cross_encoder_reranker.py`
+
+Dense + rerank wrapper:
+- `src/retrieval/dense_rerank_retriever.py`
+
+Factory:
+- `src/retrieval/factory.py`
+
+Current serving retrieval path:
+
+```text
+DenseRetriever(fetch_k)
+    ->
+CrossEncoderReranker
+    ->
+final top_k documents
+```
+
+### 5. Generation
+
+`src/generation/generator.py`
 
 Responsibilities:
-- query Chroma
-- return top-k dense results
-
-This is the primary retriever used by [pipeline.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/pipeline.py).
-
-### Generation
-
-[generator.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/generation/generator.py)
-
-Responsibilities:
-- initialize the LLM client
+- build the LLM client
 - load the prompt
 - format retrieved context
-- generate the final answer
+- generate the answer
 
-### Pipeline Orchestration
+### 6. Prediction Flow
 
-[pipeline.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/pipeline.py)
+`src/eval/prediction_runner.py`
 
 Responsibilities:
-- build the dense index if needed
-- save chunks
-- run dense retrieval
-- call generation
-- attach citations
+- load the gold question set
+- run retrieval or retrieval+generation
+- save predictions in one shared schema
+- capture latency
 
-This file is the main application path and should stay dense-only unless benchmark evidence clearly changes.
+This shared flow is important because it lets experiments stay identical except for the retriever.
 
-## Research Bench
+## Research Artifacts
 
-The repo still keeps BM25 and hybrid, but as experiment artifacts rather than serving defaults.
+### BM25
 
-Artifacts:
-- [bm25_retriever.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/retrieval/bm25_retriever.py)
-- [hybrid_retriever.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/retrieval/hybrid_retriever.py)
-- [factory.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/retrieval/factory.py)
+`src/retrieval/bm25_retriever.py`
 
-Experiment runners:
-- [run_predictions.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/eval/run_predictions.py)
-- [run_bm25_predictions.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/eval/run_bm25_predictions.py)
-- [run_hybrid_predictions.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/eval/run_hybrid_predictions.py)
+Retained for:
+- lexical baseline
+- overlap analysis
+- research comparison
 
-Experiment evaluators:
-- [retrieval_eval.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/eval/retrieval_eval.py)
-- [analyze_retrieval_overlap.py](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/src/eval/analyze_retrieval_overlap.py)
+Not used as serving default because:
+- overlap analysis showed little useful additional relevance
+- answer benchmark evidence did not justify making it part of the serving path
 
-### Why BM25 Is Not in the Main Path
+### Hybrid
 
-Overlap analysis currently shows:
-- `avg_overlap@5 = 2.104`
-- BM25 adds a new relevant chunk on `6.2%` of queries
-- BM25 is useless on `93.8%` of queries
+`src/retrieval/hybrid_retriever.py`
 
-That means BM25 remains useful as:
-- a baseline
-- a diagnostic tool
-- a future routing signal
+Retained for:
+- fusion experiments
+- ranking analysis
 
-But not as:
-- the main retriever for the serving path
-
-### Why Hybrid Is Still Kept
-
-Hybrid is still useful because:
-- it improved `MRR`
-- it improved `Recall@1`
-- it is a valid experiment artifact for ranking analysis
-
-But hybrid is not the main serving path because:
-- dense still has stronger retrieval coverage at `Recall@3` and `Recall@5`
-- deeper branch fetch did not improve the hybrid summary on the current benchmark
+Not used as serving default because:
+- it improved early ranking but not enough broader coverage
+- dense+rerank produced a stronger overall stack
 
 ## Evaluation Layers
 
-The architecture now assumes evaluation should happen in stages.
+### Retrieval Metrics
 
-### 1. Retrieval-Only Evaluation
-
-Goal:
-- measure whether the retriever finds the right chunks
-
-Metrics:
+Used metrics:
+- `MRR`
 - `Recall@1`
 - `Recall@3`
 - `Recall@5`
-- `MRR`
-- overlap and diversity diagnostics
+- overlap diagnostics
 
-This stage should run without the LLM in the loop.
+### Answer Metrics
 
-### 2. Reranking
+Current lightweight scorecard:
+- correctness proxy
+- expected chunk retrieved rate
+- citation grounding
+- unsupported-risk proxy
+- latency:
+  - retrieval
+  - generation
+  - total
 
-Goal:
-- improve ordering after dense retrieval
+## Why Dense + Rerank Won
 
-Recommended next layer:
-- cross-encoder reranking on the dense candidate set
+The current architecture settles on dense+rereank because:
 
-This is the next quality layer to add.
-
-### 3. Grounding and Citation Enforcement
-
-Goal:
-- make sure generated answers stay attached to retrieved evidence
-
-This stage should check:
-- citation presence
-- citation correctness
-- answer grounding to retrieved chunks
-
-### 4. End-to-End Answer Evaluation
-
-Goal:
-- judge final answer usefulness only after retrieval and grounding are stable
-
-## Recommended Next Direction
-
-The next architecture change should be:
-
-1. dense retrieval
-2. cross-encoder reranking
-3. grounding and citation enforcement
-4. end-to-end answer evaluation
-
-Not the other way around.
+- dense provides strong candidate recall
+- the cross-encoder improves ranking inside that candidate pool
+- answer quality improved
+- unsupported-risk dropped
+- citation grounding stayed strong
 
 ## Practical Summary
 
-This repo is no longer best described as “dense vs BM25 vs hybrid as equal pipeline options.”
+This repo should now be understood as:
 
-It is better described as:
-
-- dense is the primary application retriever
-- BM25 and hybrid are controlled research artifacts
-- reranking is the next system improvement
-- grounding is the next answer-safety improvement
-
-See also:
-- [findings.md](/C:/RRR/projects/ai-engineer-portfolio/ai-rag-devops/docs/findings.md)
+- dense+rerank is the serving retrieval stack
+- BM25 and hybrid are research artifacts
+- retrieval-only benchmarking and answer-generation benchmarking are intentionally separate modes
