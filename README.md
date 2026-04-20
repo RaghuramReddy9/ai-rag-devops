@@ -1,6 +1,6 @@
 # AI RAG DevOps
 
-A research-oriented RAG benchmark repo for comparing retrieval stacks and measuring whether retrieval gains actually improve final answers.
+A production-grade RAG benchmarking system for comparing retrieval pipelines and testing whether retrieval gains hold up in end-to-end answer generation. This is not a chatbot project. It is an evidence-driven benchmark repo for retrieval quality, grounding, and latency tradeoffs.
 
 The project now has two permanent experiment modes:
 
@@ -12,9 +12,9 @@ The project now has two permanent experiment modes:
   - change only the retriever
   - measure answer quality, grounding, unsupported-risk, and end-to-end latency
 
-## Current Serving Choice
+## Final Decision
 
-The current best retrieval stack is:
+The chosen production retrieval pipeline is:
 
 - `dense_rerank`
   - `DenseRetriever`
@@ -22,11 +22,16 @@ The current best retrieval stack is:
   - `CrossEncoderReranker`
   - final top-k to generation
 
-BM25 and hybrid were evaluated and kept in the repo as research artifacts, not as serving defaults.
+Why this is the default:
+- dense outperformed BM25 on this corpus
+- hybrid RRF did not improve recall enough because BM25 added little useful diversity
+- dense + cross-encoder reranking delivered the strongest overall retrieval results
 
-## Final Results
+BM25 and hybrid remain in the repo as research artifacts, not serving defaults.
 
-### Retrieval-Only
+## Final Findings
+
+### Retrieval-Only Benchmark
 
 | Stack | MRR | Recall@1 | Recall@3 | Recall@5 |
 |---|---:|---:|---:|---:|
@@ -35,18 +40,24 @@ BM25 and hybrid were evaluated and kept in the repo as research artifacts, not a
 | Hybrid | 0.705 | 0.590 | 0.753 | 0.753 |
 | Dense + Rerank | 0.817 | 0.694 | 0.809 | 0.917 |
 
-### Answer Generation
+Interpretation:
+- dense is the strongest base retriever
+- reranking significantly improved early-rank relevance
+- reranking improved top-result quality substantially
+- reranking improved `Recall@5`
+- `Recall@3` dipped slightly, but dense+rerank is still the best retrieval design overall
 
-| Stack | Correctness | Grounded Citations | Unsupported Risk | Total Avg Latency |
-|---|---:|---:|---:|---:|
-| Dense + LLM | 0.676 | 1.000 | 0.062 | 31812.55 ms |
-| Dense + Rerank + LLM | 0.687 | 1.000 | 0.042 | 17920.62 ms |
+### Answer-Generation Benchmark
+
+| Stack | Correctness | Grounded Citations | Unsupported Risk | Retrieval Avg | Generation Avg | Total Avg |
+|---|---:|---:|---:|---:|---:|---:|
+| Dense + LLM | 0.676 | 1.000 | 0.062 | 156.63 ms | 31655.85 ms | 31812.55 ms |
+| Dense + Rerank + LLM | 0.687 | 1.000 | 0.042 | 458.31 ms | 17462.25 ms | 17920.62 ms |
 
 Interpretation:
-- `dense_rerank` is the best overall stack
-- reranking improved retrieval quality and slightly improved final answer quality
-- grounded citations remained strong
-- retrieval became slower, but total latency was still lower in the completed answer benchmark run
+- answer-generation experiments keep the same dataset, prompt, model, and answer schema and change only the retriever
+- the current answer scorecard is lightweight but complete enough to compare `dense + LLM` against `dense_rerank + LLM`
+- `dense_rerank` slightly improved correctness, kept citation grounding perfect, reduced unsupported-risk, and finished with lower total latency in the completed run
 
 ## What We Learned
 
@@ -54,6 +65,26 @@ Interpretation:
 - BM25 adds little useful diversity here and does not justify being part of the serving path
 - Hybrid improves early ranking but not enough overall coverage to beat the dense+rerank stack
 - Cross-encoder reranking is now part of the preferred serving stack
+
+### Why Hybrid Failed
+
+- BM25 overlapped heavily with dense retrieval and contributed little new relevant evidence
+- overlap analysis showed BM25 added a new relevant chunk on only `6.2%` of queries
+- that low contribution meant hybrid RRF did not improve recall enough to justify the added complexity
+
+### Failure Patterns That Still Matter
+
+- dense fails, rerank fixes:
+  cross-encoder reranking often recovers the right chunk when dense candidates are present but badly ordered
+- both fail:
+  multi-evidence questions are still the hardest cases
+- lexical retrieval contributes little:
+  BM25 remains useful as a baseline and diagnostic, but not as part of the serving path
+
+Concrete examples:
+- `gold_002`: dense missed the right LangChain definition chunk; reranking promoted it and fixed the answer
+- `gold_037`: both systems remained weak on a multi-evidence Transformers question
+- `gold_029`: reranking did not help enough to change the outcome
 
 ## Repository Layout
 
@@ -136,6 +167,8 @@ Per question:
 - call the LLM once
 - save answer, citations, retrieved context, and latency
 
+This mode exists to judge whether reranking's answer-quality gain is worth its latency cost.
+
 Small sanity runs:
 
 ```bash
@@ -161,6 +194,16 @@ Compare answer quality:
 ```bash
 uv run python -m src.eval.evaluate_answer_scorecard --inputs experiments/results/dense_answers.jsonl experiments/results/dense_rerank_answers.jsonl --output experiments/results/final_answer_scorecard_summary.json
 ```
+
+## Latency Tradeoff
+
+This project tracks:
+- retrieval latency
+- rerank latency as part of retrieval-side cost
+- generation latency
+- total latency
+
+The point is not just to improve retrieval metrics. The real question is whether reranking improves final answers enough to justify its latency cost.
 
 ## Why BM25 And Hybrid Stay In The Repo
 

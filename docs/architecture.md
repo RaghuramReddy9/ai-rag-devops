@@ -7,6 +7,8 @@ This repository has two stable layers:
 - serving-oriented retrieval and answer generation
 - research-oriented benchmarking and diagnostics
 
+It should be understood as a production RAG benchmarking system, not a chatbot application.
+
 The current preferred serving stack is:
 
 ```text
@@ -53,6 +55,7 @@ This mode exists to answer:
 - does the retriever find the right chunks?
 - does reranking improve ranking quality?
 - does hybrid help enough to justify its complexity?
+- does BM25 contribute enough new evidence to matter?
 
 ### Answer-Generation Mode
 
@@ -78,6 +81,8 @@ This mode exists to answer:
 - do retrieval gains improve final answers?
 - are answers grounded in retrieved evidence?
 - is the extra latency worth it?
+
+This mode keeps the same dataset, prompt, model, and answer schema fixed and changes only the retriever.
 
 ## Current Serving Stack
 
@@ -207,6 +212,8 @@ Current lightweight scorecard:
   - generation
   - total
 
+The scorecard is intentionally simple. Its job is to test whether better retrieval quality translates into better grounded answers without changing the rest of the system.
+
 ## Why Dense + Rerank Won
 
 The current architecture settles on dense+rerank because:
@@ -216,6 +223,8 @@ The current architecture settles on dense+rerank because:
 - answer quality improved
 - unsupported-risk dropped
 - citation grounding stayed strong
+
+Dense+rerank is therefore the chosen production pipeline for this benchmark corpus.
 
 ## Practical Summary
 

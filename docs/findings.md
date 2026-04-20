@@ -32,6 +32,13 @@ This repo is valuable because it does not stop at "RAG works." It compares retri
 - `Recall@3: 0.753`
 - `Recall@5: 0.753`
 
+### BM25
+
+- `MRR: 0.496`
+- `Recall@1: 0.392`
+- `Recall@3: 0.576`
+- `Recall@5: 0.576`
+
 ### Dense + Rerank
 
 - `MRR: 0.817`
@@ -51,6 +58,9 @@ Why:
 Interpretation:
 - dense gives the strongest candidate pool
 - the cross-encoder improves final ordering enough to outperform the other stacks
+- reranking improved early-rank relevance substantially
+- reranking improved `Recall@5`
+- `Recall@3` dipped slightly, but not enough to change the final stack decision
 
 ## Why BM25 Failed As A Serving Path
 
@@ -109,6 +119,12 @@ Why:
 - citation grounding stayed perfect
 - unsupported-risk decreased
 
+This answer benchmark is a controlled comparison between:
+- `dense + LLM`
+- `dense_rerank + LLM`
+
+It keeps the same dataset, prompt, model, and answer schema fixed and changes only the retriever.
+
 ## Latency Tradeoff
 
 Dense+rerank adds retrieval-side cost:
@@ -125,6 +141,8 @@ Interpretation:
 - reranking is slower on retrieval
 - but the overall end-to-end run was still faster in the completed benchmark
 - the main driver was lower generation time, likely because reranked context was cleaner and easier for the model to answer from
+
+The practical decision question is whether reranking's quality gain is worth its latency cost. On this corpus, the answer is yes.
 
 ## Failure Analysis
 
@@ -155,6 +173,7 @@ Examples:
 Interpretation:
 - reranking is not universally better on every single question
 - but it wins strongly enough overall to justify the stack choice
+- lexical retrieval contributes little in this corpus and does not change the serving decision
 
 ## Final Decision
 
@@ -164,6 +183,8 @@ Current default recommendation:
 - research artifacts kept in repo:
   - `bm25`
   - `hybrid`
+
+This benchmark directly drove the serving decision: dense+rerank is the production choice because it was the strongest design in both retrieval-only and answer-generation evaluation.
 
 ## Portfolio Value
 
