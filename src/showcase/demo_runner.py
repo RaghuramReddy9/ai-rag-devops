@@ -5,11 +5,7 @@ from dataclasses import dataclass
 from time import perf_counter
 from typing import Any
 
-from langchain_core.documents import Document
-
 from src.common.config import load_config
-from src.generation.generator import generate_answer, get_llm, load_prompt
-from src.retrieval.factory import build_retriever
 from src.showcase.result_loader import (
     citation_key,
     choose_demo_question,
@@ -46,7 +42,7 @@ class DemoRun:
     metrics: dict[str, Any]
 
 
-def _doc_to_context(doc: Document) -> dict[str, Any]:
+def _doc_to_context(doc: Any) -> dict[str, Any]:
     metadata = doc.metadata or {}
     return {
         "source": metadata.get("source", "unknown"),
@@ -60,6 +56,8 @@ def _record_for_question(records: list[dict[str, Any]], question: str) -> dict[s
 
 
 def _run_live_retrieval(question: str, k: int) -> tuple[dict[str, dict[str, Any]], str | None]:
+    from src.retrieval.factory import build_retriever
+
     results: dict[str, dict[str, Any]] = {}
     for retriever_name, config_path in RETRIEVER_CONFIGS.items():
         config = load_config(config_path)
@@ -118,6 +116,10 @@ def _answer_from_saved(display_question: str) -> dict[str, Any]:
 def _generate_live_answer(question: str, context: list[dict[str, Any]]) -> tuple[str, float, str | None]:
     if not os.getenv("OPENROUTER_API_KEY"):
         return "", 0.0, "Missing OPENROUTER_API_KEY; using saved answer artifact when available."
+
+    from langchain_core.documents import Document
+
+    from src.generation.generator import generate_answer, get_llm, load_prompt
 
     docs = [
         Document(

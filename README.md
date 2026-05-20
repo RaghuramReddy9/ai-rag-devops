@@ -113,6 +113,31 @@ Recommended showcase flow:
 - check the grounding/risk panel
 - finish with benchmark insights for quality and latency tradeoffs
 
+### Streamlit Community Cloud Deployment
+
+Use these settings when creating the app in Streamlit Community Cloud:
+
+```text
+Repository: RaghuramReddy9/ai-rag-devops
+Branch: main
+Main file path: streamlit_app.py
+Python version: 3.11+
+```
+
+The root `requirements.txt` is intentionally lightweight for the public dashboard:
+
+- `streamlit`
+- `pyyaml`
+
+The deployed showcase uses saved benchmark artifacts from `experiments/results/` by default, so it does not need API keys or local model downloads to render. Leave the live retriever and live LLM toggles off in the public demo unless the deployment environment is provisioned with the full benchmark dependencies and required secrets.
+
+If live answer generation is enabled, add secrets in Streamlit Cloud rather than committing them:
+
+```toml
+OPENROUTER_API_KEY = "..."
+OPENROUTER_MODEL = "..."
+```
+
 ### Screenshot Placeholders
 
 Add screenshots after running the Streamlit app locally:
