@@ -3,6 +3,7 @@
 
 # Python
 __pycache__/
+.pytest_cache/
 *.pyc
 *.pyo
 *.pyd
@@ -22,7 +23,11 @@ uv.lock
 
 # Vector Store
 chroma_db/
+chroma_db_minilm/
 .chroma/
+
+# Local generated artifacts
+tmp/
 
 # Jupyter
 .ipynb_checkpoints/

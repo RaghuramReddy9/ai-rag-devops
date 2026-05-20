@@ -1,6 +1,6 @@
-# AI RAG DevOps
+# AI Retrieval Inspector
 
-A production-grade RAG benchmarking system for comparing retrieval pipelines and testing whether retrieval gains hold up in end-to-end answer generation. This is not a chatbot project. It is an evidence-driven benchmark repo for retrieval quality, grounding, and latency tradeoffs.
+An AI engineering dashboard and benchmark system for inspecting retrieval quality, evidence grounding, and latency tradeoffs in RAG pipelines. This is not a chatbot project. It is an evidence-driven retrieval observability project focused on understanding why RAG systems succeed or fail.
 
 The project now has two permanent experiment modes:
 
@@ -11,6 +11,156 @@ The project now has two permanent experiment modes:
   - keep the same dataset, prompt, LLM, and answer schema
   - change only the retriever
   - measure answer quality, grounding, unsupported-risk, and end-to-end latency
+
+## Showcase: AI Retrieval Inspector
+
+`AI Retrieval Inspector` is a dashboard layer on top of the benchmark system. It is designed to help developers understand why a RAG system succeeds or fails by making retrieval behavior, evidence quality, citations, latency, and grounding risk visible in one place.
+
+This is intentionally not framed as a chatbot. The core product idea is retrieval observability: before trusting an answer, inspect the evidence path that produced it.
+
+### Project Problem
+
+RAG systems often fail in ways that are hard to debug from the final answer alone. A response can look plausible while being weakly grounded, missing the expected source chunk, over-relying on irrelevant context, or hiding latency tradeoffs behind a single generation call.
+
+This project addresses that problem by separating the benchmark backend from a lightweight inspection UI:
+
+- benchmark retrievers under controlled conditions
+- compare dense, BM25, hybrid, and dense-rerank retrieval outputs
+- inspect the exact chunks surfaced for a query
+- evaluate whether citations map back to retrieved evidence
+- compare quality and latency tradeoffs using saved experiment outputs
+
+### Why Retrieval Observability Matters
+
+For production AI engineering, retrieval quality is not just an offline metric. It affects answer correctness, hallucination risk, latency, cost, and developer trust.
+
+The inspector makes the retrieval layer explainable by showing:
+
+- which retriever found which source chunks
+- whether reranking changed the evidence order
+- whether the answer cites retrieved chunks
+- whether unsupported-risk is rising or falling across benchmark runs
+- where latency is spent across retrieval and generation
+
+This gives teams a practical way to reason about failure modes instead of treating the LLM response as a black box.
+
+### Showcase Architecture
+
+```text
+Existing benchmark backend
+        |
+        v
+Read-only experiment artifacts
+        |
+        v
+src/showcase demo wrapper
+        |
+        v
+Streamlit dashboard
+```
+
+The showcase layer reads from existing configs and `experiments/results/` artifacts where possible. It can also attempt live retriever calls through the existing retrieval factory, but falls back to saved benchmark outputs when model loading, API keys, or local runtime dependencies are unavailable.
+
+No retrieval or evaluation modules are refactored for the UI. The dashboard is a thin presentation and inspection layer over the benchmark system.
+
+### Dashboard Sections
+
+- System Overview: run mode, grounding status, latency, and architecture flow
+- Query Input: selectable benchmark questions or custom inspection query
+- Retriever Comparison: dense, BM25, hybrid, and dense-rerank side-by-side
+- Retrieved Evidence Explorer: expandable source/chunk cards for ranked evidence
+- Answer + Citations: final answer artifact from answer-generation results when available
+- Grounding / Risk Analysis: citation-to-context checks and hallucination-risk signals
+- Benchmark Insights: retrieval metrics, answer quality, unsupported-risk, and latency summaries
+
+### Local Setup
+
+Use the local project environment:
+
+```bash
+uv sync
+```
+
+Expected environment variables for live answer generation:
+
+```bash
+OPENROUTER_API_KEY=
+OPENROUTER_MODEL=
+```
+
+The dashboard can still run without an API key. In that case it uses saved benchmark outputs from `experiments/results/` and displays unavailable live metrics as `not available`.
+
+### Demo Instructions
+
+Start the showcase dashboard:
+
+```bash
+uv run streamlit run streamlit_app.py
+```
+
+Then open:
+
+```text
+http://localhost:8501/
+```
+
+Recommended showcase flow:
+
+- start with the default saved benchmark question
+- compare dense, BM25, hybrid, and dense-rerank retrieval results
+- open the evidence cards and inspect source/chunk IDs
+- review the answer citation trail
+- check the grounding/risk panel
+- finish with benchmark insights for quality and latency tradeoffs
+
+### Screenshot Placeholders
+
+Add screenshots after running the Streamlit app locally:
+
+```text
+docs/screenshots/retrieval-inspector-overview.png
+docs/screenshots/retriever-comparison.png
+docs/screenshots/evidence-explorer.png
+docs/screenshots/grounding-risk-panel.png
+```
+
+Suggested captions:
+
+- System overview with architecture flow and run status
+- Retriever comparison table across dense, BM25, hybrid, and dense-rerank
+- Expandable evidence cards showing source and chunk IDs
+- Grounding and hallucination-risk panel with citation checks
+
+### Benchmark Findings
+
+The completed benchmark supports `dense_rerank` as the preferred serving pipeline for this corpus:
+
+- dense retrieval was the strongest base retriever
+- BM25 contributed limited useful diversity
+- hybrid improved early ranking but did not beat dense-rerank overall
+- cross-encoder reranking improved top-result quality and `Recall@5`
+- answer-generation experiments showed lower unsupported-risk for dense-rerank
+
+The key production conclusion is that retrieval-only gains should be validated against answer quality and latency. In this project, reranking added retrieval-side cost but improved the final answer profile enough to justify keeping it as the preferred stack.
+
+### Production Engineering Considerations
+
+- Evidence visibility: every answer should be inspectable through source chunks and citation metadata.
+- Repeatable evaluation: saved JSONL and summary artifacts make comparisons reproducible.
+- Failure isolation: retrieval-only runs separate retriever failures from LLM-generation failures.
+- Latency accounting: retrieval, generation, and total latency are tracked separately.
+- Fallback behavior: the dashboard remains useful from saved artifacts even when live API calls are unavailable.
+- Secret handling: API keys are read from environment variables and are not surfaced in the UI.
+- Serving discipline: BM25 and hybrid remain benchmark artifacts unless evidence supports promoting them.
+
+### Future Roadmap
+
+- Add per-query diff views showing how reranking changes dense retrieval order.
+- Add source coverage and duplicate-evidence diagnostics.
+- Add calibrated confidence only if derived from validated evaluation data.
+- Add regression checks for retrieval quality across corpus or embedding changes.
+- Add exportable inspection reports for individual benchmark questions.
+- Add support for comparing additional rerankers or embedding models under the same evaluation harness.
 
 ## Final Decision
 
